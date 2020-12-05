@@ -1,41 +1,170 @@
-var createError = require('http-errors');
-var express = require('express');
-var path = require('path');
-var cookieParser = require('cookie-parser');
-var logger = require('morgan');
+const CLIENT_ID = '9txgDPBxjBrkcB1w';
+var inData = { 
+    'screenName': prompt('What would you like your screen name to be?'),
+    'nameColor': getRandomColor(),
+}
 
-var indexRouter = require('./routes/index');
-// var usersRouter = require('./routes/users');
+while (inData['screenName'] == null || inData['screenName'] == '' || !/[a-z0-9]/.test(inData['screenName'])) {
+    inData['screenName'] = prompt('The screen name you entered is either invalid or already taken. Please enter a new screen name.')
+}
 
-var app = express();
-
-// view engine setup
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'pug');
-
-app.use(logger('dev'));
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
-
-app.use('/', indexRouter);
-// app.use('/users', usersRouter);
-
-// catch 404 and forward to error handler
-app.use(function(req, res, next) {
-  next(createError(404));
+const drone = new ScaleDrone(CLIENT_ID, {
+    data: { // Will be sent out as clientData via events
+        name: inData['screenName'],
+        color: inData['nameColor'],
+    },
 });
 
-// error handler
-app.use(function(err, req, res, next) {
-  // set locals, only providing error in development
-  res.locals.message = err.message;
-  res.locals.error = req.app.get('env') === 'development' ? err : {};
 
-  // render the error page
-  res.status(err.status || 500);
-  res.render('error');
+
+let members = [];
+
+drone.on('open', error => {
+    if (error) {
+        return console.error(error);
+    }
+    console.log('Successfully connected to Scaledrone');
+
+    const room = drone.subscribe('observable-room');
+    room.on('open', error => {
+        if (error) {
+            return console.error(error);
+        }
+        console.log('Successfully joined room');
+    });
+
+    room.on('members', m => {
+        members = m;
+        updateMembersDOM();
+    });
+
+    room.on('member_join', member => {
+        members.push(member);
+        updateMembersDOM();
+    });
+
+    room.on('member_leave', ({ id }) => {
+        const index = members.findIndex(member => member.id === id);
+        members.splice(index, 1);
+        updateMembersDOM();
+    });
+
+    room.on('data', (text, member) => {
+        if (member) {
+            addMessageToListDOM(text, member);
+        } else {
+            // Message is from server
+        }
+    });
 });
 
-module.exports = app;
+drone.on('close', event => {
+    console.log('Connection was closed', event);
+});
+
+drone.on('error', error => {
+    console.error(error);
+});
+
+function getRandomName() {
+    const adjs = ["autumn", "hidden", "bitter", "misty", "silent", "empty", "dry", "dark", "summer", "icy", "delicate", "quiet", "white", "cool", "spring", "winter", "patient", "twilight", "dawn", "crimson", "wispy", "weathered", "blue", "billowing", "broken", "cold", "damp", "falling", "frosty", "green", "long", "late", "lingering", "bold", "little", "morning", "muddy", "old", "red", "rough", "still", "small", "sparkling", "throbbing", "shy", "wandering", "withered", "wild", "black", "young", "holy", "solitary", "fragrant", "aged", "snowy", "proud", "floral", "restless", "divine", "polished", "ancient", "purple", "lively", "nameless"];
+    const nouns = ["waterfall", "river", "breeze", "moon", "rain", "wind", "sea", "morning", "snow", "lake", "sunset", "pine", "shadow", "leaf", "dawn", "glitter", "forest", "hill", "cloud", "meadow", "sun", "glade", "bird", "brook", "butterfly", "bush", "dew", "dust", "field", "fire", "flower", "firefly", "feather", "grass", "haze", "mountain", "night", "pond", "darkness", "snowflake", "silence", "sound", "sky", "shape", "surf", "thunder", "violet", "water", "wildflower", "wave", "water", "resonance", "sun", "wood", "dream", "cherry", "tree", "fog", "frost", "voice", "paper", "frog", "smoke", "star"];
+    return (
+        adjs[Math.floor(Math.random() * adjs.length)] +
+        "_" +
+        nouns[Math.floor(Math.random() * nouns.length)]
+    );
+}
+
+function getRandomColor() {
+    return '#' + Math.floor(Math.random() * 0xFFFFFF).toString(16);
+}
+
+
+const DOM = {
+    membersCount: document.querySelector('.members-count'),
+    membersList: document.querySelector('.members-list'),
+    messages: document.querySelector('.messages'),
+    input: document.querySelector('.message-form__input'),
+    form: document.querySelector('.message-form'),
+};
+
+DOM.form.addEventListener('submit', sendMessage);
+
+function sendMessage() {
+    const value = DOM.input.value;
+    if (value === '') {
+        return;
+    }
+    DOM.input.value = '';
+    drone.publish({
+        room: 'observable-room',
+        message: value,
+    });
+}
+
+function checkFilter() {
+    var theSocket = '';
+    var filterRequest = new XMLHttpRequest();
+    filterRequest.open('POST', theSocket);
+    filterRequest.onload = function () {
+
+    }
+    filterRequest.send();
+}
+
+function createMemberElement(member) {
+    const { name, color } = member.clientData;
+    const el = document.createElement('h5');
+    el.innerText = name;
+    //el.className = '';
+    el.style.color = color;
+    return el;
+}
+/*
+function updateMembersVisual(member) {
+    let ul = document.getElementById('members_display');
+    let li = document.createElement('li');
+    let chatlist = document.createElement('div'); chatlist.className = 'chatList';
+    let image = document.createElement('div'); image.className = 'img';// image.width = '44';
+    let i = document.createElement('i'); i.className = 'fa fa-circle:before';
+    let img = document.createElement('img'); img.src = 'OIP.jpg'; img.className = 'avatar'; img.width = "30"; img.height = '26.0667';
+    image.appendChild(i);
+    image.appendChild(img);
+    chatlist.appendChild(image);
+    let desc = document.createElement('div'); desc.className = 'desc';
+    let time = document.createElement('small'); time.className = 'time'; time.innerText = new Date().toLocaleTimeString();
+    let member_name = createMemberElement(member);
+    let bio = document.createElement('small'); bio.innerText = 'Hello';
+    desc.appendChild(time);
+    desc.appendChild(member_name);
+    desc.appendChild(bio)
+    chatlist.appendChild(desc)
+    li.appendChild(chatlist);
+    ul.appendChild(li);
+}
+*/
+function updateMembersDOM() {
+    DOM.membersCount.innerText = `${members.length} users in room:`;
+    DOM.membersList.innerHTML = '';
+    //document.getElementById('members_display').innerHTML = ''
+    members.forEach(member => DOM.membersList.appendChild(createMemberElement(member)));
+    //members.forEach(member => updateMembersVisual(member));
+}
+
+function createMessageElement(text, member) {
+    const el = document.createElement('span');
+    el.appendChild(createMemberElement(member));
+    el.appendChild(document.createTextNode(text));
+    el.className = 'message';
+    return el;
+}
+
+function addMessageToListDOM(text, member) {
+    const el = DOM.messages;
+    var wasTop = el.scrollTop === el.scrollHeight - el.clientHeight;
+    el.appendChild(createMessageElement(text, member));
+    if (wasTop) {
+        el.scrollTop = el.scrollHeight - el.clientHeight;
+    }
+}
