@@ -1,0 +1,45 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <link href="https://fonts.googleapis.com/css?family=Raleway" rel="stylesheet">
+    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="stylesheet.css">
+    <script type='text/javascript' src='https://cdn.scaledrone.com/scaledrone.min.js'></script>
+    <script type='text/javascript' src='http://0.0.0.0:8080/scaledrone.js'></script>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <style>
+        .messages {
+            overflow:scroll;
+            height:500px;
+        }
+    </style>
+</head>
+<body>
+    <div class="main-section">
+        
+        <div class="body-section">
+            <div class="left-section">
+                <!--ul id="members_display">
+                    -
+                </!-ul-->
+                <div class="members-count">-</div>
+                <div class="members-list">-</div>
+            </div>
+            <div class="right-section">
+                <div class="messages"></div>
+            </div>
+            <div class="right-section-bottom">
+                <form class="message-form" onsubmit="return false;">
+                    <input class="message-form__input" placeholder="Type a message.." type="text">
+                    <input class="message-form__button" value="Send" type="submit">
+                </form>
+            </div>
+        </div>
+    </div>
+    <button id="test-btn"></button>
+    <script src="jquery.min.js"></script>
+    <!-- custom scrollbar plugin -->
+    <script src="chat.js"></script>
+</body>
+</html>
